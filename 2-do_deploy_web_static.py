@@ -1,31 +1,32 @@
 #!/usr/bin/python3
-"""
-Fabric script that distributes an archive to your web servers
-"""
-from fabric.api import *
-from os.path import exists
-env.user = 'ubuntu'
+from fabric.api import run, put, env
+import os
+
+
 env.hosts = ['23.20.133.240', '18.234.214.85']
+env.user = os.getenv('USER')
 
 
 def do_deploy(archive_path):
-    """Deploys the archive to the web servers"""
-    if not exists(archive_path):
+    if not os.path.isfile(archive_path):
         return False
-    archive_name = archive_path.split('/')[-1]
-    remote_path = '/tmp/{}'.format(archive_name)
+
     # Upload the archive to the /tmp/ directory of the web server
-    put(archive_path, remote_path)
-    # Uncompress the archive to the folder /data/web_static/releases/<archive
-    # filename without extension>
-    archive_folder = '/data/web_static/releases/{}'.format(
-        archive_name.split('.')[0])
-    run('mkdir -p {}'.format(archive_folder))
-    run('tar -xzf {} -C {}'.format(remote_path, archive_folder))
+    put(archive_path, "/tmp/")
+
+    # Uncompress the archive to the folder /data/web_static/releases/<archive filename without extension> on the web server
+    filename = os.path.basename(archive_path)
+    directory = "/data/web_static/releases/" + filename.split(".")[0]
+    run("mkdir -p {}".format(directory))
+    run("tar -xzf /tmp/{} -C {} ".format(filename, directory))
+
     # Delete the archive from the web server
-    run('rm {}'.format(remote_path))
+    run("rm /tmp/{}".format(filename))
+
     # Delete the symbolic link /data/web_static/current from the web server
-    run('sudo rm -rf /data/web_static/current')
-    # Create a new the symbolic link /data/web_static/current on the web server
-    run('sudo ln -s {} /data/web_static/current'.format(archive_folder))
+    run("rm -rf /data/web_static/current")
+
+    # Create a new the symbolic link /data/web_static/current on the web server, linked to the new version of your code (/data/web_static/releases/<archive filename without extension>)
+    run("ln -s {} /data/web_static/current".format(directory))
+
     return True
