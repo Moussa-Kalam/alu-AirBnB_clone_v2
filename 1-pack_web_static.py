@@ -15,11 +15,11 @@ def do_pack():
         # Create the name of the archive file
         file_name = "web_static_{}.tgz".format(
             datetime.utcnow().strftime("%Y%m%d%H%M%S"))
-        
+
         # Compress the web_static directory into the archive file
         local("tar -cvzf versions/{} web_static".format(file_name))
 
         # Return the path to the archive file
         return "versions/{}".format(file_name)
-    except: 
+    except BaseException:
         return None
